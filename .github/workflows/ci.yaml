@@ -1,0 +1,64 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+    tags-ignore:
+      - v*
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: 0 4/12 * * *
+  workflow_dispatch:
+    inputs:
+      nightly:
+        description: use latest nightly
+        required: true
+        type: boolean
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        env:
+          nightly: ${{ (github.event.inputs.nightly == 'true' || github.event_name == 'schedule') && 'true' || '' }}
+        run: |
+          if [ -z $nightly ]; then
+            toolchain=$(grep channel rust-toolchain.toml | sed -r 's/channel = "(.*)"/\1/')
+            echo "installing toolchain $toolchain from rust-toolchain.toml"
+          else
+            toolchain='nightly'
+            echo "installing toolchain nightly"
+            echo "also setting RUSTUP_TOOLCHAIN to nightly"
+            echo "RUSTUP_TOOLCHAIN=nightly" >> "$GITHUB_ENV"
+          fi
+          rm /home/runner/.cargo/bin/rustfmt
+          rustup toolchain install $toolchain --profile minimal
+          rustup component add --toolchain $toolchain rustfmt
+          rustup component add --toolchain $toolchain clippy
+
+      - name: Install just
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: just check
+
+      - name: Check code format
+        run: just fmt-check
+
+      - name: Run linter
+        run: just lint
+
+      - name: Run tests
+        run: just test
