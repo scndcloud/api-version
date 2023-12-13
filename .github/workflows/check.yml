@@ -1,0 +1,96 @@
+# Check the project for formatting, clippy warnings, and doc building 
+name: check
+on:
+  push:
+    branches:
+      - main
+    tags-ignore:
+      - v*
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: 0 4/12 * * *
+  workflow_dispatch:
+    inputs:
+      nightly:
+        description: use latest nightly
+        required: true
+        type: boolean
+
+# new code pushed to a PR branch cancels in-progress workflows for that PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    name: stable / fmt
+    steps:
+      - name: Install just
+        uses: taiki-e/install-action@just
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - name: Check code format
+        run: just check
+  fmt:
+    runs-on: ubuntu-latest
+    name: stable / fmt
+    steps:
+      - name: Install just
+        uses: taiki-e/install-action@just
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - name: Check code format
+        run: just fmt-check
+  lint:
+    runs-on: ubuntu-latest
+    name: ${{ matrix.toolchain }} / clippy
+    permissions:
+      contents: read
+      checks: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # Get early warning of new lints which are regularly introduced in beta channels.
+        toolchain: [stable, beta]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install ${{ matrix.toolchain }}
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: clippy
+      - name: cargo clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+  doc:
+    runs-on: ubuntu-latest
+    name: nightly / doc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install nightly
+        uses: dtolnay/rust-toolchain@nightly
+      - name: cargo doc
+        run: cargo doc --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: --cfg docsrs
