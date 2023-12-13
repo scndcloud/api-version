@@ -139,12 +139,13 @@ impl Display for Version {
     }
 }
 
+/// An invalid version string.
 #[derive(Debug, Error)]
 #[error("invalid version: {0}")]
 pub struct VersionError(String);
 
 /// Function to be used as axum middleware to rewrite request paths from optionally carrying a
-/// single [XApiVersion] custom header to paths with respective prefixes, e.g. "/v0/<path>". If a
+/// single [XApiVersion] custom header to paths with respective prefixes, e.g. "/v0/{path}". If a
 /// request has no [XApiVersion] custom header the latest (highest) version is used. The readiness
 /// probe "/" is not rewritten.
 ///
