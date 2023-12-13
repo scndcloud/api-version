@@ -34,16 +34,17 @@ macro_rules! versions {
         #[derive(Debug)]
         pub struct Versions([Version; $b - $a + 1]);
 
-        const VERSIONS: Versions = Versions(array_macro::array![n => Version(n + $a); $b - $a + 1]);
+        const VERSIONS: Versions =
+            Versions(array_macro::array![n => $crate::Version::new(n + $a); $b - $a + 1]);
 
-        impl AsRef<[Version]> for Versions {
-            fn as_ref(&self) -> &[Version] {
+        impl AsRef<[$crate::Version]> for Versions {
+            fn as_ref(&self) -> &[$crate::Version] {
                 &self.0
             }
         }
 
         #[async_trait::async_trait]
-        impl<S> FromRequestParts<S> for Versions {
+        impl<S> axum::extract::FromRequestParts<S> for Versions {
             type Rejection = ();
 
             async fn from_request_parts(
@@ -102,8 +103,8 @@ static VERSION: LazyLock<Regex> =
 pub struct Version(usize);
 
 impl Version {
-    pub fn number(&self) -> usize {
-        self.0
+    pub const fn new(value: usize) -> Self {
+        Self(value)
     }
 }
 

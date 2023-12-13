@@ -4,14 +4,13 @@ version = "0.0.1"
 edition = "2021"
 
 [dependencies]
-array-macro  = { version = "2.1" }
-async-trait  = { version = "0.1" }
-axum         = { version = "0.7" }
-axum-extra   = { version = "0.9", features = [ "typed-header" ] }
-const_format = { version = "0.2" }
-regex        = { version = "1.10" }
-thiserror    = { version = "1.0" }
-tracing      = { version = "0.1" }
+array-macro = { version = "2.1" }
+async-trait = { version = "0.1" }
+axum        = { version = "0.7" }
+axum-extra  = { version = "0.9", features = [ "typed-header" ] }
+regex       = { version = "1.10" }
+thiserror   = { version = "1.0" }
+tracing     = { version = "0.1" }
 
 [dev-dependencies]
 futures = { version = "0.3" }
