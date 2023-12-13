@@ -1,14 +1,10 @@
 pub use array_macro;
 
 use axum::{
-    extract::Request,
-    http::{uri::PathAndQuery, HeaderName, HeaderValue, StatusCode, Uri},
-    response::{IntoResponse, Response},
-    RequestExt,
-};
-use axum_extra::{
     headers::{self, Header},
-    TypedHeader,
+    http::{uri::PathAndQuery, HeaderName, HeaderValue, Request, StatusCode, Uri},
+    response::{IntoResponse, Response},
+    RequestExt, TypedHeader,
 };
 use futures::future::BoxFuture;
 use regex::Regex;
@@ -124,11 +120,12 @@ pub struct ApiVersion<const N: usize, S, F> {
     filter: F,
 }
 
-impl<const N: usize, S, F> Service<Request> for ApiVersion<N, S, F>
+impl<const N: usize, S, F, B> Service<Request<B>> for ApiVersion<N, S, F>
 where
-    S: Service<Request, Response = Response> + Clone + Send + 'static,
+    S: Service<Request<B>, Response = Response> + Clone + Send + 'static,
     S::Future: Send + 'static,
     F: ApiVersionFilter,
+    B: Send + 'static,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -138,7 +135,7 @@ where
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, mut request: Request) -> Self::Future {
+    fn call(&mut self, mut request: Request<B>) -> Self::Future {
         let mut inner = self.inner.clone();
         let versions = self.versions;
         let filter = self.filter.clone();
