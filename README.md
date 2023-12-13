@@ -1,7 +1,15 @@
 # api-version
 
-Axum middleware to rewrite requests from optionally carrying an `x-api-version` header to paths with respective prefixes.
+[![license][license-badge]][license-url]
+[![build][build-badge]][build-url]
 
-In order to use this crate, the following dependencides are also needed (check the exact versions in this `Cargo.toml`):
-- `array-macro = { version = "2.1" }`
-- `async-trait = { version = "0.1" }`
+[license-badge]: https://img.shields.io/github/license/scndcloud/api-version
+[license-url]: https://github.com/scndcloud/api-version/blob/main/LICENSE
+[build-badge]: https://img.shields.io/github/actions/workflow/status/scndcloud/api-version/ci.yaml
+[build-url]: https://github.com/scndcloud/api-version/actions/workflows/ci.yaml
+
+Axum middleware to add a version prefix to request paths based on a set of versions and an optional `x-api-version` header.
+
+## License ##
+
+This code is open source software licensed under the [Apache 2.0 License](http://www.apache.org/licenses/LICENSE-2.0.html).
