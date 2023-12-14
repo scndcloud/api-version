@@ -31,7 +31,6 @@ name = "api-version"
 version = "0.0.1"
 dependencies = [
  "array-macro",
- "async-trait",
  "axum",
  "axum-extra",
  "futures",
