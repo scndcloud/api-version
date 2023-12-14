@@ -1,4 +1,4 @@
-use api_version::{rewrite_versions, X_API_VERSION};
+use api_version::{api_version, X_API_VERSION};
 use axum::{
     body::Body,
     http::{Request, StatusCode},
@@ -16,7 +16,7 @@ async fn test() {
         .route("/", get(ok_0))
         .route("/v0/test", get(ok_0))
         .route("/v1/test", get(ok_1));
-    let mut app = rewrite_versions!(0, 1).layer(app);
+    let mut app = api_version!(0, 1).layer(app);
 
     // Verify that for the root path (health check) versions don't matter.
     let request = Request::builder()
