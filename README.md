@@ -21,13 +21,13 @@ Paths must not start with a version prefix, e.g. `"/v0"`.
 ## Example
 
 ```rust
-use api_version::rewrite_versions;
+use api_version::api_version;
 
 let app = Router::new()
     .route("/", get(ok_0))
     .route("/v0/test", get(ok_0))
     .route("/v1/test", get(ok_1));
-let app = rewrite_versions!(0, 1).layer(app);
+let app = api_version!(0, 1).layer(app);
 ```
 
 ## License ##

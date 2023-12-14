@@ -21,12 +21,14 @@ use thiserror::Error;
 use tower::{Layer, Service};
 use tracing::debug;
 
+/// Create an [ApiVersionLayer] correctly initialized with non-empty and strictly monotonically
+/// increasing version in the given inclusive range.
 #[macro_export]
-macro_rules! rewrite_versions {
+macro_rules! api_version {
     ($from:literal, $to:literal) => {
         {
             let versions = array_macro::array![n => n as u16 + $from; $to - $from + 1];
-            $crate::RewriteVersionLayer::new(versions).expect("versions are valid")
+            $crate::ApiVersionLayer::new(versions).expect("versions are valid")
         }
     };
 }
@@ -38,22 +40,22 @@ macro_rules! rewrite_versions {
 ///
 /// Paths must not start with a version prefix, e.g. "/v0".
 #[derive(Clone)]
-pub struct RewriteVersionLayer<const N: usize> {
+pub struct ApiVersionLayer<const N: usize> {
     versions: [u16; N],
 }
 
-impl<const N: usize> RewriteVersionLayer<N> {
+impl<const N: usize> ApiVersionLayer<N> {
     /// Create a new [RewriteVersionLayer].
     ///
     /// The given versions must not be empty and must be strictly monotonically increasing, e.g.
     /// `[0, 1, 2]`.
-    pub fn new(versions: [u16; N]) -> Result<Self, NewRewriteVersionLayerError> {
+    pub fn new(versions: [u16; N]) -> Result<Self, NewApiVersionLayerError> {
         if versions.is_empty() {
-            return Err(NewRewriteVersionLayerError::Empty);
+            return Err(NewApiVersionLayerError::Empty);
         }
 
         if versions.as_slice().windows(2).any(|w| w[0] >= w[1]) {
-            return Err(NewRewriteVersionLayerError::NotIncreasing);
+            return Err(NewApiVersionLayerError::NotIncreasing);
         }
 
         Ok(Self { versions })
@@ -61,7 +63,7 @@ impl<const N: usize> RewriteVersionLayer<N> {
 }
 
 #[derive(Debug, Error)]
-pub enum NewRewriteVersionLayerError {
+pub enum NewApiVersionLayerError {
     #[error("versions must not be empty")]
     Empty,
 
@@ -69,25 +71,25 @@ pub enum NewRewriteVersionLayerError {
     NotIncreasing,
 }
 
-impl<const N: usize, S> Layer<S> for RewriteVersionLayer<N> {
-    type Service = RewriteVersion<N, S>;
+impl<const N: usize, S> Layer<S> for ApiVersionLayer<N> {
+    type Service = ApiVersion<N, S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        RewriteVersion {
+        ApiVersion {
             inner,
             versions: self.versions,
         }
     }
 }
 
-/// See [RewriteVersionLayer].
+/// See [ApiVersionLayer].
 #[derive(Clone)]
-pub struct RewriteVersion<const N: usize, S> {
+pub struct ApiVersion<const N: usize, S> {
     inner: S,
     versions: [u16; N],
 }
 
-impl<const N: usize, S> Service<Request> for RewriteVersion<N, S>
+impl<const N: usize, S> Service<Request> for ApiVersion<N, S>
 where
     S: Service<Request, Response = Response> + Send + 'static + Clone,
     S::Future: Send + 'static,
