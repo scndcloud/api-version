@@ -14,6 +14,7 @@ use futures::future::BoxFuture;
 use regex::Regex;
 use std::{
     fmt::Debug,
+    future::Future,
     sync::LazyLock,
     task::{Context, Poll},
 };
@@ -22,34 +23,38 @@ use tower::{Layer, Service};
 use tracing::debug;
 
 /// Create an [ApiVersionLayer] correctly initialized with non-empty and strictly monotonically
-/// increasing version in the given inclusive range.
+/// increasing versions in the given inclusive range as well as a [ApiVersionFilter] making all
+/// requests be rewritten.
 #[macro_export]
 macro_rules! api_version {
-    ($from:literal, $to:literal) => {
+    ($from:literal..=$to:literal) => {
         {
             let versions = array_macro::array![n => n as u16 + $from; $to - $from + 1];
-            $crate::ApiVersionLayer::new(versions).expect("versions are valid")
+            $crate::ApiVersionLayer::new(versions, $crate::All).expect("versions are valid")
         }
     };
 }
 
-/// Axum middleware to add a version prefix to a request's path based on a set of versions and an
-/// optional [XApiVersion] header. If no such header is present, the highest version is used.
+/// Axum middleware to rewrite a request such that a version prefix is added to the path. This is
+/// based on a set of versions and an optional `"x-api-version"` custom HTTP header: if no such
+/// header is present, the highest version is used. Yet this only applies to requests the URIs of
+/// which pass a filter; others are not rewritten.
 ///
-/// The readiness probe "/" is not rewritten.
+/// Requests for the readiness probe `"/"` are not rewritten.
 ///
-/// Paths must not start with a version prefix, e.g. "/v0".
+/// Paths must not start with a version prefix, e.g. `"/v0"`.
 #[derive(Clone)]
-pub struct ApiVersionLayer<const N: usize> {
+pub struct ApiVersionLayer<const N: usize, F> {
     versions: [u16; N],
+    filter: F,
 }
 
-impl<const N: usize> ApiVersionLayer<N> {
-    /// Create a new [RewriteVersionLayer].
+impl<const N: usize, F> ApiVersionLayer<N, F> {
+    /// Create a new [ApiVersionLayer].
     ///
     /// The given versions must not be empty and must be strictly monotonically increasing, e.g.
     /// `[0, 1, 2]`.
-    pub fn new(versions: [u16; N]) -> Result<Self, NewApiVersionLayerError> {
+    pub fn new(versions: [u16; N], filter: F) -> Result<Self, NewApiVersionLayerError> {
         if versions.is_empty() {
             return Err(NewApiVersionLayerError::Empty);
         }
@@ -58,10 +63,42 @@ impl<const N: usize> ApiVersionLayer<N> {
             return Err(NewApiVersionLayerError::NotIncreasing);
         }
 
-        Ok(Self { versions })
+        Ok(Self { versions, filter })
     }
 }
 
+impl<const N: usize, S, F> Layer<S> for ApiVersionLayer<N, F>
+where
+    F: ApiVersionFilter,
+{
+    type Service = ApiVersion<N, S, F>;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        ApiVersion {
+            inner,
+            versions: self.versions,
+            filter: self.filter.clone(),
+        }
+    }
+}
+
+/// Determine which requests are rewritten.
+pub trait ApiVersionFilter: Clone + Send + 'static {
+    /// Requests are only rewritten, if the given URI passes, i.e. results in `true`.
+    fn filter(&self, uri: &Uri) -> impl Future<Output = bool> + Send;
+}
+
+/// [ApiVersionFilter] making all requests be rewritten.
+#[derive(Clone, Copy)]
+pub struct All;
+
+impl ApiVersionFilter for All {
+    async fn filter(&self, _uri: &Uri) -> bool {
+        true
+    }
+}
+
+/// Error creating an [ApiVersionLayer].
 #[derive(Debug, Error)]
 pub enum NewApiVersionLayerError {
     #[error("versions must not be empty")]
@@ -71,28 +108,19 @@ pub enum NewApiVersionLayerError {
     NotIncreasing,
 }
 
-impl<const N: usize, S> Layer<S> for ApiVersionLayer<N> {
-    type Service = ApiVersion<N, S>;
-
-    fn layer(&self, inner: S) -> Self::Service {
-        ApiVersion {
-            inner,
-            versions: self.versions,
-        }
-    }
-}
-
 /// See [ApiVersionLayer].
 #[derive(Clone)]
-pub struct ApiVersion<const N: usize, S> {
+pub struct ApiVersion<const N: usize, S, F> {
     inner: S,
     versions: [u16; N],
+    filter: F,
 }
 
-impl<const N: usize, S> Service<Request> for ApiVersion<N, S>
+impl<const N: usize, S, F> Service<Request> for ApiVersion<N, S, F>
 where
-    S: Service<Request, Response = Response> + Send + 'static + Clone,
+    S: Service<Request, Response = Response> + Clone + Send + 'static,
     S::Future: Send + 'static,
+    F: ApiVersionFilter,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -105,6 +133,7 @@ where
     fn call(&mut self, mut request: Request) -> Self::Future {
         let mut inner = self.inner.clone();
         let versions = self.versions;
+        let filter = self.filter.clone();
 
         Box::pin(async move {
             // Always serve "/", typically used as readiness probe, unmodified.
@@ -122,6 +151,10 @@ where
                     "path must not start with version prefix like '/v0'",
                 );
                 return Ok(response.into_response());
+            }
+
+            if !filter.filter(request.uri()).await {
+                return inner.call(request).await;
             }
 
             // Determine API version.
