@@ -1,7 +1,7 @@
-use api_version::{api_version, X_API_VERSION};
+use api_version::{ApiVersionFilter, ApiVersionLayer, X_API_VERSION};
 use axum::{
     body::Body,
-    http::{Request, StatusCode},
+    http::{Request, StatusCode, Uri},
     response::{IntoResponse, Response},
     routing::get,
     Router,
@@ -15,8 +15,15 @@ async fn test() {
     let app = Router::new()
         .route("/", get(ok_0))
         .route("/v0/test", get(ok_0))
-        .route("/v1/test", get(ok_1));
-    let mut app = api_version!(0, 1).layer(app);
+        .route("/v1/test", get(ok_1))
+        .route("/foo", get(ok_foo));
+    let mut app = ApiVersionLayer::new([0, 1], FooFilter).unwrap().layer(app);
+
+    // Verify that filter is working.
+    let request = Request::builder().uri("/foo").body(Body::empty()).unwrap();
+    let response = app.call(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(text(response).await, "foo");
 
     // Verify that for the root path (health check) versions don't matter.
     let request = Request::builder()
@@ -72,12 +79,25 @@ async fn test() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
+#[derive(Clone)]
+struct FooFilter;
+
+impl ApiVersionFilter for FooFilter {
+    async fn filter(&self, uri: &Uri) -> bool {
+        !uri.path().starts_with("/foo")
+    }
+}
+
 async fn ok_0() -> impl IntoResponse {
     "0"
 }
 
 async fn ok_1() -> impl IntoResponse {
     "1"
+}
+
+async fn ok_foo() -> impl IntoResponse {
+    "foo"
 }
 
 async fn text(response: Response) -> String {
