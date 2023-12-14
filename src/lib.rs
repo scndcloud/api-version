@@ -23,14 +23,19 @@ use tower::{Layer, Service};
 use tracing::debug;
 
 /// Create an [ApiVersionLayer] correctly initialized with non-empty and strictly monotonically
-/// increasing versions in the given inclusive range as well as an [ApiVersionFilter] making all
-/// requests be rewritten.
+/// increasing versions in the given inclusive range.
 #[macro_export]
 macro_rules! api_version {
     ($from:literal..=$to:literal) => {
         {
+            api_version!($from..=$to, $crate::All)
+        }
+    };
+
+    ($from:literal..=$to:literal, $filter:expr) => {
+        {
             let versions = array_macro::array![n => n as u16 + $from; $to - $from + 1];
-            $crate::ApiVersionLayer::new(versions, $crate::All).expect("versions are valid")
+            $crate::ApiVersionLayer::new(versions, $filter).expect("versions are valid")
         }
     };
 }
