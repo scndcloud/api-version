@@ -23,7 +23,7 @@ use tower::{Layer, Service};
 use tracing::debug;
 
 /// Create an [ApiVersionLayer] correctly initialized with non-empty and strictly monotonically
-/// increasing versions in the given inclusive range as well as a [ApiVersionFilter] making all
+/// increasing versions in the given inclusive range as well as an [ApiVersionFilter] making all
 /// requests be rewritten.
 #[macro_export]
 macro_rules! api_version {

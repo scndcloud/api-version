@@ -25,7 +25,7 @@ let app = Router::new()
     .route("/v1/test", get(ok_1));
 
 /// Create an [ApiVersionLayer] correctly initialized with non-empty and strictly monotonically
-/// increasing versions in the given inclusive range as well as a [ApiVersionFilter] making all
+/// increasing versions in the given inclusive range as well as an [ApiVersionFilter] making all
 /// requests be rewritten.
 let app = api_version!(0..=1).layer(app);
 ```
