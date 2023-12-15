@@ -97,7 +97,7 @@ jobs:
       - name: "rustfmt --check"
         run: |
           rustup override set ${{needs.toolchain.outputs.channel}}
-          rustup component add clippy
+          rustup component add rustfmt
           just fmt-check
 
   lint:
