@@ -28,7 +28,7 @@ jobs:
   #
   # We can still reuse this job output to override (or not) appropriately
   # See:
-  # https://github.com/dtolnay/rust-toolchain/issues/29
+  # https://github.com/dtolnay/rust-toolchain/issues/29#issuecomment-1412903426
   # https://github.com/dtolnay/rust-toolchain/pull/58/files
   toolchain:
     runs-on: ubuntu-latest
@@ -53,8 +53,8 @@ jobs:
           fi
           echo "toolchain=$toolchain" >> "$GITHUB_OUTPUT"
 
-  build:
-    name: build
+  check:
+    name: check
     runs-on: ubuntu-latest
     needs: toolchain
     steps:
@@ -97,6 +97,7 @@ jobs:
       - name: "rustfmt --check"
         run: |
           rustup override set ${{needs.toolchain.outputs.channel}}
+          rustup component add clippy
           just fmt-check
 
   lint:
@@ -108,8 +109,6 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
 
       - name: Install just
         uses: taiki-e/install-action@v2
@@ -122,6 +121,7 @@ jobs:
       - name: clippy
         run: |
           rustup override set ${{needs.toolchain.outputs.channel}}
+          rustup component add clippy
           just lint
 
   coverage:
