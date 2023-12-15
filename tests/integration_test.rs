@@ -7,7 +7,7 @@ use axum::{
     Router,
 };
 use futures::{future::ok, TryStreamExt};
-use std::iter::Extend;
+use std::{convert::Infallible, iter::Extend};
 use tower::{Layer, Service};
 
 #[tokio::test]
@@ -83,8 +83,10 @@ async fn test() {
 struct FooFilter;
 
 impl ApiVersionFilter for FooFilter {
-    async fn filter(&self, uri: &Uri) -> bool {
-        !uri.path().starts_with("/foo")
+    type Error = Infallible;
+
+    async fn filter(&self, uri: &Uri) -> Result<bool, Self::Error> {
+        Ok(!uri.path().starts_with("/foo"))
     }
 }
 
