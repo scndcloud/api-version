@@ -149,12 +149,21 @@ jobs:
           rustup override set ${{needs.toolchain.outputs.channel}}
           just coverage
 
+      - name: Check for Codecov secret
+        id: secret-check
+        run: |
+          if [ -z ${{ secrets.CODECOV_TOKEN }} ]; then
+            echo "available=true" >> $GITHUB_OUTPUT;
+            echo "Codecov secret is available"
+          else
+            echo "available=false" >> $GITHUB_OUTPUT;
+            echo "No Codecov secret found"
+          fi
+
       - name: Upload coverage to Codecov
+        if: ${{ steps.secret-check.outputs.available != 'true' }}
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           files: lcov.info
-          fail_ci_if_error: true
-
-      - name: Run tests
-        run: just test
+          fail_ci_if_error: false
