@@ -13,6 +13,7 @@ use axum_extra::{
 use futures::future::BoxFuture;
 use regex::Regex;
 use std::{
+    convert::Infallible,
     fmt::Debug,
     future::Future,
     sync::LazyLock,
@@ -20,7 +21,7 @@ use std::{
 };
 use thiserror::Error;
 use tower::{Layer, Service};
-use tracing::debug;
+use tracing::{debug, error};
 
 /// Create an [ApiVersionLayer] correctly initialized with non-empty and strictly monotonically
 /// increasing versions in the given inclusive range.
@@ -89,8 +90,10 @@ where
 
 /// Determine which requests are rewritten.
 pub trait ApiVersionFilter: Clone + Send + 'static {
+    type Error: std::error::Error;
+
     /// Requests are only rewritten, if the given URI passes, i.e. results in `true`.
-    fn filter(&self, uri: &Uri) -> impl Future<Output = bool> + Send;
+    fn filter(&self, uri: &Uri) -> impl Future<Output = Result<bool, Self::Error>> + Send;
 }
 
 /// [ApiVersionFilter] making all requests be rewritten.
@@ -98,8 +101,10 @@ pub trait ApiVersionFilter: Clone + Send + 'static {
 pub struct All;
 
 impl ApiVersionFilter for All {
-    async fn filter(&self, _uri: &Uri) -> bool {
-        true
+    type Error = Infallible;
+
+    async fn filter(&self, _uri: &Uri) -> Result<bool, Self::Error> {
+        Ok(true)
     }
 }
 
@@ -158,7 +163,16 @@ where
                 return Ok(response.into_response());
             }
 
-            if !filter.filter(request.uri()).await {
+            let pass_through = match filter.filter(request.uri()).await {
+                Ok(pass_through) => pass_through,
+
+                Err(error) => {
+                    error!(%error, "cannot apply filter");
+                    return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response());
+                }
+            };
+
+            if !pass_through {
                 return inner.call(request).await;
             }
 
