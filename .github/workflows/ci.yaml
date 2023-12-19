@@ -123,6 +123,7 @@ jobs:
           rustup override set ${{needs.toolchain.outputs.channel}}
           rustup component add clippy
           just lint
+
   test:
     name: test
     runs-on: ubuntu-latest
