@@ -23,19 +23,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Note: dtolnay/rust-toolchain version will always be overriden by rust-toolchain.toml
-  # since it declares `rustup default ...` not `rustup override ...`
-  #
-  # We can still reuse this job output to override (or not) appropriately
-  # See:
-  # https://github.com/dtolnay/rust-toolchain/issues/29#issuecomment-1412903426
-  # https://github.com/dtolnay/rust-toolchain/pull/58/files
   toolchain:
     runs-on: ubuntu-latest
     env:
       nightly: ${{ (github.event.inputs.nightly == 'true' || github.event_name == 'schedule') && 'true' || '' }}
     outputs:
-      channel: ${{ steps.vars.outputs.toolchain }}
+      toolchain: ${{ steps.vars.outputs.toolchain }}
     steps:
       - uses: actions/checkout@v4
       - id: vars
@@ -45,13 +38,14 @@ jobs:
           if [ -z $nightly ] && [ -f $toolchain_toml ]; then
             toolchain=$(grep channel $toolchain_toml | sed -r 's/channel = "(.*)"/\1/')
             echo "using toolchain $toolchain from rust-toolchain.toml"
+            echo "not setting RUSTUP_TOOLCHAIN"
+            echo "toolchain=" >> "$GITHUB_OUTPUT"
           else
             toolchain='nightly'
             echo "using toolchain nightly"
             echo "also setting RUSTUP_TOOLCHAIN to nightly"
-            echo "RUSTUP_TOOLCHAIN=nightly" >> "$GITHUB_ENV"
+            echo "toolchain=RUSTUP_TOOLCHAIN=nightly" >> "$GITHUB_OUTPUT"
           fi
-          echo "toolchain=$toolchain" >> "$GITHUB_OUTPUT"
 
   check:
     name: check
@@ -60,7 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust stable
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install just
@@ -70,10 +64,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build
-        run: |
-          rustup override set ${{needs.toolchain.outputs.channel}}
-          just check
+      - name: just check
+        run: ${{needs.toolchain.outputs.toolchain}} just check
 
   fmt-check:
     name: fmt-check
@@ -82,7 +74,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust stable
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
@@ -94,11 +86,10 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: "rustfmt --check"
+      - name: just fmt-check
         run: |
-          rustup override set ${{needs.toolchain.outputs.channel}}
           rustup component add rustfmt
-          just fmt-check
+          ${{needs.toolchain.outputs.toolchain}} just fmt-check
 
   lint:
     name: lint
@@ -107,7 +98,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust stable
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install just
@@ -117,11 +108,10 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: lint
+      - name: just lint
         run: |
-          rustup override set ${{needs.toolchain.outputs.channel}}
           rustup component add clippy
-          just lint
+          ${{needs.toolchain.outputs.toolchain}} just lint
 
   test:
     name: test
@@ -130,7 +120,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust stable
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install just
@@ -140,10 +130,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: test
-        run: |
-          rustup override set ${{needs.toolchain.outputs.channel}}
-          just test
+      - name: just test
+        run: ${{needs.toolchain.outputs.toolchain}} just test
 
   coverage:
     name: coverage
@@ -152,7 +140,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust stable
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install just
@@ -165,10 +153,8 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Generate code coverage
-        run: |
-          rustup override set ${{needs.toolchain.outputs.channel}}
-          just coverage
+      - name: just coverage
+        run: ${{needs.toolchain.outputs.toolchain}} just coverage
 
       - name: Check for Codecov secret
         id: secret-check
