@@ -38,13 +38,11 @@ jobs:
           if [ -z $nightly ] && [ -f $toolchain_toml ]; then
             toolchain=$(grep channel $toolchain_toml | sed -r 's/channel = "(.*)"/\1/')
             echo "using toolchain $toolchain from rust-toolchain.toml"
-            echo "not setting RUSTUP_TOOLCHAIN"
-            echo "toolchain=" >> "$GITHUB_OUTPUT"
+            echo "toolchain=$toolchain" >> "$GITHUB_OUTPUT"
           else
             toolchain='nightly'
             echo "using toolchain nightly"
-            echo "also setting RUSTUP_TOOLCHAIN to nightly"
-            echo "toolchain=RUSTUP_TOOLCHAIN=nightly" >> "$GITHUB_OUTPUT"
+            echo "toolchain=nightly" >> "$GITHUB_OUTPUT"
           fi
 
   check:
@@ -55,7 +53,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{needs.toolchain.outputs.toolchain}}
 
       - name: Install just
         uses: taiki-e/install-action@v2
@@ -65,7 +65,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: just check
-        run: ${{needs.toolchain.outputs.toolchain}} just check
+        run: |
+          rustup override set ${{needs.toolchain.outputs.toolchain}}
+          just check
 
   fmt-check:
     name: fmt-check
@@ -75,8 +77,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{needs.toolchain.outputs.toolchain}}
           components: rustfmt
 
       - name: Install just
@@ -88,8 +91,8 @@ jobs:
 
       - name: just fmt-check
         run: |
-          rustup component add rustfmt
-          ${{needs.toolchain.outputs.toolchain}} just fmt-check
+          rustup override set ${{needs.toolchain.outputs.toolchain}}
+          just fmt-check
 
   lint:
     name: lint
@@ -99,7 +102,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{needs.toolchain.outputs.toolchain}}
+          components: clippy
 
       - name: Install just
         uses: taiki-e/install-action@v2
@@ -110,8 +116,8 @@ jobs:
 
       - name: just lint
         run: |
-          rustup component add clippy
-          ${{needs.toolchain.outputs.toolchain}} just lint
+          rustup override set ${{needs.toolchain.outputs.toolchain}}
+          just lint
 
   test:
     name: test
@@ -121,7 +127,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{needs.toolchain.outputs.toolchain}}
 
       - name: Install just
         uses: taiki-e/install-action@v2
@@ -131,7 +139,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: just test
-        run: ${{needs.toolchain.outputs.toolchain}} just test
+        run: |
+          rustup override set ${{needs.toolchain.outputs.toolchain}}
+          just test
 
   coverage:
     name: coverage
@@ -141,7 +151,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{needs.toolchain.outputs.toolchain}}
 
       - name: Install just
         uses: taiki-e/install-action@v2
@@ -154,7 +166,9 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: just coverage
-        run: ${{needs.toolchain.outputs.toolchain}} just coverage
+        run: |
+          rustup override set ${{needs.toolchain.outputs.toolchain}}
+          just coverage
 
       - name: Check for Codecov secret
         id: secret-check
