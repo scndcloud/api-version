@@ -117,8 +117,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      # Run clippy
-      - name: clippy
+      - name: lint
         run: |
           rustup override set ${{needs.toolchain.outputs.channel}}
           rustup component add clippy
@@ -141,8 +140,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      # Run clippy
-      - name: clippy
+      - name: test
         run: |
           rustup override set ${{needs.toolchain.outputs.channel}}
           just test
