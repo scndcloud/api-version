@@ -20,6 +20,10 @@ test:
 	@echo "RUSTUP_TOOLCHAIN is ${RUSTUP_TOOLCHAIN:-not set}"
 	cargo test
 
+coverage:
+	@echo "RUSTUP_TOOLCHAIN is ${RUSTUP_TOOLCHAIN:-not set}"
+	cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+
 fix:
 	@echo "RUSTUP_TOOLCHAIN is ${RUSTUP_TOOLCHAIN:-not set}"
 	cargo fix --allow-dirty --allow-staged
