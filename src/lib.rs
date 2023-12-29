@@ -1,5 +1,3 @@
-#![feature(lazy_cell)]
-
 use axum::{
     extract::Request,
     http::{uri::PathAndQuery, HeaderName, HeaderValue, StatusCode, Uri},
@@ -16,7 +14,7 @@ use std::{
     convert::Infallible,
     fmt::Debug,
     future::Future,
-    sync::LazyLock,
+    sync::OnceLock,
     task::{Context, Poll},
 };
 use thiserror::Error;
@@ -214,9 +212,6 @@ where
 /// Header name for the [XApiVersion] custom HTTP header.
 pub static X_API_VERSION: HeaderName = HeaderName::from_static("x-api-version");
 
-static VERSION: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"^v(0|[1-9][0-9]?)$"#).expect("version regex is valid"));
-
 /// Custom HTTP header conveying the API version, which is expected to be a version designator
 /// starting with `'v'` followed by a number from 0..+99 without leading zero, e.g. `v0`.
 #[derive(Debug)]
@@ -235,7 +230,7 @@ impl Header for XApiVersion {
         values
             .next()
             .and_then(|v| v.to_str().ok())
-            .and_then(|s| VERSION.captures(s).and_then(|c| c.get(1)))
+            .and_then(|s| version().captures(s).and_then(|c| c.get(1)))
             .and_then(|m| m.as_str().parse().ok())
             .map(XApiVersion)
             .ok_or_else(headers::Error::invalid)
@@ -245,4 +240,10 @@ impl Header for XApiVersion {
         // We do not yet need to encode this header.
         unimplemented!("not yet needed");
     }
+}
+
+// TODO Use `LazyLock` once stabilized!
+fn version() -> &'static Regex {
+    static VERSION: OnceLock<Regex> = OnceLock::new();
+    VERSION.get_or_init(|| Regex::new(r#"^v(0|[1-9][0-9]?)$"#).expect("version regex is valid"))
 }
