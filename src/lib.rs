@@ -242,6 +242,7 @@ impl Header for XApiVersion {
     }
 }
 
+// TODO Use `LazyLock` once stabilized!
 fn version() -> &'static Regex {
     static VERSION: OnceLock<Regex> = OnceLock::new();
     VERSION.get_or_init(|| Regex::new(r#"^v(0|[1-9][0-9]?)$"#).expect("version regex is valid"))
