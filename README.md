@@ -10,8 +10,6 @@
 
 Axum middleware to rewrite a request such that a version prefix is added to the path. This is based on a set of versions and an optional `"x-api-version"` custom HTTP header: if no such header is present, the highest version is used. Yet this only applies to requests the URIs of which pass a filter; others are not rewritten.
 
-Requests for the readiness probe `"/"` are not rewritten.
-
 Paths must not start with a version prefix, e.g. `"/v0"`.
 
 ## Example

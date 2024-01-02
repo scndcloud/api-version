@@ -46,8 +46,6 @@ macro_rules! api_version {
 /// header is present, the highest version is used. Yet this only applies to requests the URIs of
 /// which pass a filter; others are not rewritten.
 ///
-/// Requests for the readiness probe `"/"` are not rewritten.
-///
 /// Paths must not start with a version prefix, e.g. `"/v0"`.
 #[derive(Clone)]
 pub struct ApiVersionLayer<const N: usize, F> {
@@ -146,11 +144,6 @@ where
         let filter = self.filter.clone();
 
         Box::pin(async move {
-            // Always serve "/", typically used as readiness probe, unmodified.
-            if request.uri().path() == "/" {
-                return inner.call(request).await;
-            }
-
             // Do not allow the path to start with one of the valid version prefixes.
             if versions
                 .iter()
@@ -173,6 +166,7 @@ where
             };
 
             if !pass_through {
+                debug!(uri = %request.uri(), "not rewriting the path");
                 return inner.call(request).await;
             }
 
@@ -205,6 +199,7 @@ where
             let uri = Uri::from_parts(parts).expect("parts are valid");
 
             // Rewrite the request URI and run the downstream services.
+            debug!(original_uri = %request.uri(), %uri, "rewrote the path");
             request.uri_mut().clone_from(&uri);
             inner.call(request).await
         })
