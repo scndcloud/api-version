@@ -192,7 +192,8 @@ where
             let path = paq_parts.next().expect("uri has path");
             let paq = match paq_parts.next() {
                 Some(query) => format!("/v{version}{path}?{query}"),
-                None => format!("/v{version}{path}"),
+                None if path != "/" => format!("/v{version}{path}"),
+                None => format!("/v{version}"),
             };
             let paq = PathAndQuery::from_maybe_shared(paq).expect("new 'path and query' is valid");
             parts.path_and_query = Some(paq);
