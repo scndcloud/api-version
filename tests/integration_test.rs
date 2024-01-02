@@ -17,6 +17,7 @@ async fn test() {
         .route("/v0/test", get(ok_0))
         .route("/v1/test", get(ok_1))
         .route("/foo", get(ok_foo));
+
     let mut app = api_version!(0..=1, FooFilter).layer(app);
 
     // Verify that filter is working.

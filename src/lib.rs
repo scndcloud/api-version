@@ -29,13 +29,13 @@ use tracing::{debug, error};
 macro_rules! api_version {
     ($from:literal..=$to:literal) => {
         {
-            api_version!($from..=$to, $crate::All)
+            $crate::api_version!($from..=$to, $crate::All)
         }
     };
 
     ($from:literal..=$to:literal, $filter:expr) => {
         {
-            let versions = array_macro::array![n => n as u16 + $from; $to - $from + 1];
+            let versions = $crate::array_macro::array![n => n as u16 + $from; $to - $from + 1];
             $crate::ApiVersionLayer::new(versions, $filter).expect("versions are valid")
         }
     };
