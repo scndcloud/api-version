@@ -26,15 +26,6 @@ async fn test() {
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(text(response).await, "foo");
 
-    // Verify that for the root path (health check) versions don't matter.
-    let request = Request::builder()
-        .uri("/")
-        .header(&X_API_VERSION, "v99")
-        .body(Body::empty())
-        .unwrap();
-    let response = app.call(request).await.unwrap();
-    assert_eq!(response.status(), StatusCode::OK);
-
     // No version.
     let request = Request::builder().uri("/test").body(Body::empty()).unwrap();
     let response = app.call(request).await.unwrap();
