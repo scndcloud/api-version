@@ -1,15 +1,9 @@
-name: ci
+name: release
 
 on:
   push:
-    branches:
-      - main
-    tags-ignore:
+    tags:
       - v*
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -94,60 +88,27 @@ jobs:
       - name: just test
         run: just test
 
-  dependabot:
-    runs-on: ubuntu-latest
-    needs: [test]
-    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
-    steps:
-      - name: approve
-        run: gh pr review --approve "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
-      - name: merge
-        run: gh pr merge --auto --squash "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
-  coverage:
+  release:
     runs-on: ubuntu-latest
     needs: [lint, test]
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install just
-        uses: taiki-e/install-action@v2
+      - name: Docker metadata
+        uses: docker/metadata-action@v5
+        id: meta
         with:
-          tool: just
+          images: ghcr.io/scndcloud/${{ github.event.repository.name }}
+          tags: type=semver,pattern={{version}}
 
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
-
-      - name: just coverage
-        run: just coverage
-
-      - name: Check for Codecov secret
-        id: secret-check
-        run: |
-          if [ -z ${{ secrets.CODECOV_TOKEN }} ]; then
-            echo "available=true" >> $GITHUB_OUTPUT;
-            echo "Codecov secret is available"
-          else
-            echo "available=false" >> $GITHUB_OUTPUT;
-            echo "No Codecov secret found"
-          fi
-
-      - name: Upload coverage to Codecov
-        if: ${{ steps.secret-check.outputs.available != 'true' }}
-        uses: codecov/codecov-action@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-          files: lcov.info
-          fail_ci_if_error: false
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker build and push
+        uses: docker/build-push-action@v5
+        with:
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
