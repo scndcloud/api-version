@@ -19,6 +19,9 @@ coverage:
 	cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
 
 fix:
-	cargo fix --allow-dirty --allow-staged
+	cargo fix --all-features --allow-dirty --allow-staged
 
-all: check fmt lint test
+doc toolchain="+nightly":
+	RUSTDOCFLAGS="-D warnings --cfg docsrs" cargo {{toolchain}} doc --no-deps --all-features
+
+all: check fmt lint test doc
