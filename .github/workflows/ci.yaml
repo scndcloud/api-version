@@ -191,7 +191,7 @@ jobs:
   #     - name: just doc
   #       run: |
   #         rustup override set ${{needs.toolchain.outputs.nightly_toolchain}}
-  #         just doc
+  #         just doc ''
 
   dependabot:
     runs-on: ubuntu-latest
