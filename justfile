@@ -3,11 +3,11 @@ set shell := ["bash", "-uc"]
 check:
 	cargo check --tests
 
-fmt:
-	cargo +nightly fmt
+fmt toolchain="+nightly":
+	cargo {{toolchain}} fmt
 
-fmt-check:
-	cargo +nightly fmt --check
+fmt-check toolchain="+nightly":
+	cargo {{toolchain}} fmt --check
 
 lint:
 	cargo clippy --no-deps -- -D warnings
