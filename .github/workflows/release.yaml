@@ -49,20 +49,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{needs.toolchain.outputs.toolchain}}
-
       - name: Install just
         uses: taiki-e/install-action@v2
         with:
           tool: just
 
       # - name: Install protoc
-      #   uses: arduino/setup-protoc@v2
+      #   uses: arduino/setup-protoc@v3
       #   with:
       #     repo-token: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{needs.toolchain.outputs.toolchain}}
 
       - uses: Swatinem/rust-cache@v2
 
@@ -77,16 +77,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install just
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{needs.toolchain.outputs.nightly_toolchain}}
           components: rustfmt
-
-      - name: Install just
-        uses: taiki-e/install-action@v2
-        with:
-          tool: just
 
       - uses: Swatinem/rust-cache@v2
 
@@ -101,21 +101,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          components: clippy
-          toolchain: ${{needs.toolchain.outputs.toolchain}}
-
       - name: Install just
         uses: taiki-e/install-action@v2
         with:
           tool: just
 
       # - name: Install protoc
-      #   uses: arduino/setup-protoc@v2
+      #   uses: arduino/setup-protoc@v3
       #   with:
       #     repo-token: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          components: clippy
+          toolchain: ${{needs.toolchain.outputs.toolchain}}
 
       - uses: Swatinem/rust-cache@v2
 
@@ -130,20 +130,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{needs.toolchain.outputs.toolchain}}
-
       - name: Install just
         uses: taiki-e/install-action@v2
         with:
           tool: just
 
       # - name: Install protoc
-      #   uses: arduino/setup-protoc@v2
+      #   uses: arduino/setup-protoc@v3
       #   with:
       #     repo-token: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{needs.toolchain.outputs.toolchain}}
 
       - uses: Swatinem/rust-cache@v2
 
@@ -158,20 +158,20 @@ jobs:
   #   steps:
   #     - uses: actions/checkout@v4
 
-  #     - name: Install Rust
-  #       uses: dtolnay/rust-toolchain@master
-  #       with:
-  #         toolchain: ${{needs.toolchain.outputs.nightly_toolchain}}
-
   #     - name: Install just
   #       uses: taiki-e/install-action@v2
   #       with:
   #         tool: just
 
   #     # - name: Install protoc
-  #     #   uses: arduino/setup-protoc@v2
+  #     #   uses: arduino/setup-protoc@v3
   #     #   with:
   #     #     repo-token: ${{secrets.GITHUB_TOKEN}}
+
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@master
+  #       with:
+  #         toolchain: ${{needs.toolchain.outputs.nightly_toolchain}}
 
   #     - uses: Swatinem/rust-cache@v2
 
