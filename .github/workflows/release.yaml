@@ -114,8 +114,8 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          components: clippy
           toolchain: ${{needs.toolchain.outputs.toolchain}}
+          components: clippy
 
       - uses: Swatinem/rust-cache@v2
 
