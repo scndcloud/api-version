@@ -14,6 +14,7 @@ use futures::future::BoxFuture;
 use regex::Regex;
 use std::{
     convert::Infallible,
+    error::Error as StdError,
     fmt::Debug,
     future::Future,
     sync::OnceLock,
@@ -160,7 +161,7 @@ where
                 Ok(pass_through) => pass_through,
 
                 Err(error) => {
-                    error!(%error, "cannot apply filter");
+                    error!(error = error.as_chain(), "cannot apply filter");
                     return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response());
                 }
             };
@@ -245,3 +246,23 @@ fn version() -> &'static Regex {
     static VERSION: OnceLock<Regex> = OnceLock::new();
     VERSION.get_or_init(|| Regex::new(r#"^v(0|[1-9][0-9]?)$"#).expect("version regex is valid"))
 }
+
+trait StdErrorExt
+where
+    Self: StdError,
+{
+    fn as_chain(&self) -> String {
+        let mut sources = vec![];
+        sources.push(self.to_string());
+
+        let mut source = self.source();
+        while let Some(s) = source {
+            sources.push(s.to_string());
+            source = s.source();
+        }
+
+        sources.join(": ")
+    }
+}
+
+impl<T> StdErrorExt for T where T: StdError {}
