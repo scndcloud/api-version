@@ -4,6 +4,7 @@ version       = "0.1.0"
 edition       = "2021"
 description   = "Axum middleware to add a version prefix to request paths based on a set of versions and an optional `x-api-version` header"
 authors       = [ "scnd developers <dev@scnd.com>" ]
+publish       = [ "scndcloud" ]
 license       = "Apache-2.0"
 readme        = "README.md"
 homepage      = "https://github.com/scndcloud/api-version"
