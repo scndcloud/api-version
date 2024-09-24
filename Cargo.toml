@@ -18,7 +18,7 @@ axum-extra  = { version = "0.9", features = [ "typed-header" ] }
 futures     = { version = "0.3" }
 regex       = { version = "1.10" }
 thiserror   = { version = "1.0" }
-tower       = { version = "0.4" }
+tower       = { version = "0.5" }
 tracing     = { version = "0.1" }
 
 [dev-dependencies]
