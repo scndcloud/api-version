@@ -258,7 +258,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: ${{steps.secret-check.outputs.available != 'true'}}
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{secrets.CODECOV_TOKEN}} # not required for public repos
           files: lcov.info
