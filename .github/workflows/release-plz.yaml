@@ -23,7 +23,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run release-plz
-        uses: MarcoIeni/release-plz-action@v0.5.114
+        uses: MarcoIeni/release-plz-action@v0.5.115
         with:
           registry: scndcloud
           token: ${{ secrets.CRATES_TOKEN }}
